@@ -36,6 +36,31 @@
   - テストとビルド（CI）
   - デプロイ（CD）
 
+### 2.1 フロントエンド（Vue 3 + Vite + TypeScript）構成（ひな型）
+
+フロントエンドは `frontend/` 配下に実装し、Vue 3 + Vite + TypeScript で構成します。
+
+- エントリポイント: `frontend/src/main.ts`
+  - Vueアプリの生成・マウント、`vue-router` の有効化
+- ルーティング: `frontend/src/router/index.ts`
+  - `/` → 投稿一覧
+  - `/posts/new` → 投稿作成
+  - `/posts/:id/edit` → 投稿修正
+- ページ（画面骨格）:
+  - `frontend/src/pages/PostsList.vue`（投稿一覧 + ページング + 削除ボタン）
+  - `frontend/src/pages/PostCreate.vue`（投稿作成フォーム + 画像multipart添付）
+  - `frontend/src/pages/PostEdit.vue`（投稿修正フォーム + 画像multipart添付）
+- APIクライアント（プレースホルダ）: `frontend/src/api/posts.ts`
+  - `getPosts(page)`
+  - `createPost(formData)`（multipartを想定）
+  - `updatePost(id, formData)`（multipartを想定）
+  - バックエンド接続先は `VITE_API_BASE_URL`（未確定値）に寄せる方針
+
+### 2.2 画像アップロード方針（フロント）
+
+- 投稿作成/修正フォームから画像を `multipart/form-data` として送信します。
+- 画像のフォームフィールド名は、バックエンド実装に合わせて調整可能な前提です（ひな型では `images[]` を使用）。
+
 ## 3. コンポーネント設計（アーキ図）
 
 ```mermaid
