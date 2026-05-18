@@ -1,6 +1,6 @@
 import { config } from 'dotenv'
 
-import { createApp } from './app.js'
+import { createApp } from './app'
 
 config()
 

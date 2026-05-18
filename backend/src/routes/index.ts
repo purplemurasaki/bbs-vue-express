@@ -1,3 +1,3 @@
-export { healthRouter } from './health.js'
-export { postsRouter } from './posts.js'
+export { healthRouter } from './health'
+export { postsRouter } from './posts'
 
