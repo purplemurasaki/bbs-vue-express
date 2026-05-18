@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 
-import { postsRouter, healthRouter } from './routes/index.js'
+import { postsRouter, healthRouter } from './routes/index'
 
 export function createApp() {
   const app = express()
