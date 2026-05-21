@@ -28,9 +28,20 @@ docker compose ps
 
 ### シード投入（手動・再実行可）
 
+**推奨（文字化けしない）** — コンテナ内でファイルを読み込む:
+
 ```powershell
-Get-Content db/seeds/dev_seed.sql | docker compose exec -T mysql mysql -uroot -pbbs_dev_root bbs
+docker cp db/seeds/dev_seed.sql bbs-mysql:/tmp/dev_seed.sql
+docker compose exec mysql mysql -uroot -pbbs_dev_root --default-character-set=utf8mb4 bbs -e "source /tmp/dev_seed.sql"
 ```
+
+**PowerShell でパイプする場合** — `-Encoding utf8` が必須です（省略すると日本語入り SQL が壊れて `ERROR 1064` になります）:
+
+```powershell
+Get-Content -Path db/seeds/dev_seed.sql -Encoding utf8 -Raw | docker compose exec -T mysql mysql -uroot -pbbs_dev_root --default-character-set=utf8mb4 bbs
+```
+
+`dev_seed.sql` の本文は ASCII のみにしているため、上記いずれでも投入できます。
 
 ### 確認
 
