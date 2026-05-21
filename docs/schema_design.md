@@ -89,24 +89,22 @@ erDiagram
 
 - 投稿一覧
   - `posts.created_at` を基に並び順を作り、ページングに使う
-  - 一覧取得時に `post_images` を必要に応じてまとめて取得（N+1回避は次工程で方針化）
+  - 一覧取得時に `post_id IN (...)` で `post_images` を一括取得（N+1回避）
 - 投稿作成/修正
-  - 投稿作成時: `posts` と `post_images` を同時に保存
-  - 投稿修正時: 画像更新方針（全置換/差分/削除指定）に応じて更新手順を決める
+  - 投稿作成時: `posts` と `post_images` を同一トランザクションで保存
+  - 投稿修正時: `images[]` が multipart で送られた場合のみ **全置換**（既存行削除→新規アップロード）
 - 投稿削除
   - `posts` を削除する際に、紐づく `post_images` も DB 上は CASCADE で削除
-  - S3側オブジェクトの扱いは未確定事項
+  - ストレージ（ローカル/S3）のオブジェクトはベストエフォートで削除
 
-## 6. 未確定事項（手順9以降で確定）
+## 6. 手順9で確定した事項
 
-- 画像の `image_url` の保持方式
-  - DBに `image_url`（フルURL）を保持するか
-  - それとも `s3_key` のみ保持して、サーバ/フロントで組み立てるか
-- S3オブジェクト削除の扱い
-  - DB削除（post_images/posts削除）に合わせてS3も削除するか
-  - あるいは保持する（コストや監査要件による）か
-- 修正時の画像更新方針
-  - 全置換（既存画像を削除→新規追加）か
-  - 差分更新（追加/削除/並び替え）か
-- サイズ上限
-  - 投稿テキスト長、画像サイズ上限、拡張子制限など（API実装時に確定）
+| 項目 | 方針 |
+| --- | --- |
+| `image_url` | `s3_key` を正とし、保存時に `CLOUDFRONT_BASE_URL` または `LOCAL_PUBLIC_BASE_URL` からフルURLを組み立てて `image_url` に保存。NULL の既存行は API 応答時に `buildPublicUrl(s3_key)` で補完 |
+| ローカル開発の画像 | `IMAGE_STORAGE_MODE=local` で `uploads/` に保存し `/uploads` で配信 |
+| 本番の画像 | `IMAGE_STORAGE_MODE=s3` + `S3_BUCKET` + `CLOUDFRONT_BASE_URL` |
+| S3/ローカル削除 | DB 削除成功後にベストエフォート削除（失敗しても API は成功） |
+| 修正時の画像 | `images[]` ファイルあり → 全置換。未送信 → `author`/`content` のみ更新 |
+| バリデーション | `author` 最大100文字必須、`content` 必須、画像 `image/*`・5MB/枚・最大10枚/投稿 |
+| 認証 | なし（削除・修正は誰でも可） |
