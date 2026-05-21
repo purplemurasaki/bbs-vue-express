@@ -1,26 +1,46 @@
 import express from 'express'
 import cors from 'cors'
+import path from 'path'
 
-import { postsRouter, healthRouter } from './routes/index'
+import { loadConfig, type AppConfig } from './config/env'
+import { createPostService } from './createServices'
+import { errorHandler } from './middleware/errorHandler'
+import { healthRouter } from './routes/health'
+import { createPostsRouter } from './routes/posts'
+import type { PostService } from './services/postService'
 
-export function createApp() {
+export type CreateAppOptions = {
+  config?: AppConfig
+  postService?: PostService
+}
+
+export function createApp(options?: CreateAppOptions | AppConfig) {
   const app = express()
+  const opts: CreateAppOptions =
+    options && 'mysql' in options ? { config: options } : (options ?? {})
+  const cfg = opts.config ?? loadConfig()
 
-  // JSON受信（投稿作成はmultipartのため、routes側で扱う予定）
   app.use(express.json())
 
-  const corsOrigin = process.env.CORS_ORIGIN
-  if (corsOrigin) {
+  if (cfg.corsOrigin) {
     app.use(
       cors({
-        origin: corsOrigin,
+        origin: cfg.corsOrigin,
       }),
     )
   }
 
+  if (cfg.imageStorageMode === 'local') {
+    const uploadPath = path.resolve(cfg.localUploadDir)
+    app.use('/uploads', express.static(uploadPath))
+  }
+
   app.use(healthRouter)
-  app.use(postsRouter)
+
+  const postService = opts.postService ?? createPostService(cfg)
+  app.use(createPostsRouter(postService))
+
+  app.use(errorHandler)
 
   return app
 }
-

@@ -1,21 +1,19 @@
 import { Router } from 'express'
 
-export const postsRouter = Router()
+import { createPostsController } from '../controllers/postsController'
+import { asyncHandler } from '../middleware/asyncHandler'
+import { uploadPostImages } from '../middleware/upload'
+import type { PostService } from '../services/postService'
 
-// 今はひな型のため、未実装を 501 で返す（フロントのAPIプレースホルダと整合させる）
-postsRouter.get('/api/posts', (_req, res) => {
-  res.status(501).json({ message: 'Not Implemented' })
-})
+export function createPostsRouter(service: PostService): Router {
+  const router = Router()
+  const ctrl = createPostsController(service)
 
-postsRouter.post('/api/posts', (_req, res) => {
-  res.status(501).json({ message: 'Not Implemented' })
-})
+  router.get('/api/posts', asyncHandler(ctrl.list))
+  router.get('/api/posts/:id', asyncHandler(ctrl.get))
+  router.post('/api/posts', uploadPostImages, asyncHandler(ctrl.create))
+  router.put('/api/posts/:id', uploadPostImages, asyncHandler(ctrl.update))
+  router.delete('/api/posts/:id', asyncHandler(ctrl.remove))
 
-postsRouter.put('/api/posts/:id', (_req, res) => {
-  res.status(501).json({ message: 'Not Implemented' })
-})
-
-postsRouter.delete('/api/posts/:id', (_req, res) => {
-  res.status(501).json({ message: 'Not Implemented' })
-})
-
+  return router
+}
