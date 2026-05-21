@@ -1,6 +1,6 @@
 # テーブル設計書（掲示板アプリ）
 
-このドキュメントは、[アーキ設計書](./architecture.md)と[要件ドラフト](../prompt/1_design_draft.md)に基づき、DB実装に向けたテーブル設計をまとめたものです（DDL案まで踏み込みません）。
+このドキュメントは、[アーキ設計書](./architecture.md)と[要件ドラフト](../prompt/1_design_draft.md)に基づき、DBのテーブル設計をまとめたものです。DDL/DML の実装は [`db/`](../db/) 配下にあります。
 
 ## 1. 前提/スコープ
 
@@ -41,25 +41,20 @@ erDiagram
 - 投稿の本体データを保持する
 - 投稿一覧のページング（10件/ページ、作成日時の新しい順）に利用する
 
-#### カラム（案）
-- `id`（PK）
-  - 投稿を一意に識別する整数（auto increment想定）
-- `author`
-  - 投稿者名（文字列）
-- `content`
-  - 投稿内容（テキスト）
-- `created_at`
-  - 作成日時
-- `updated_at`
-  - 更新日時
+#### カラム（確定）
+- `id`（PK）: `BIGINT UNSIGNED` AUTO_INCREMENT
+- `author`: `VARCHAR(100) NOT NULL` — 投稿者名
+- `content`: `TEXT NOT NULL` — 投稿内容
+- `created_at`: `DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)`
+- `updated_at`: `DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3)`
 
-#### 制約/整合性（ベース）
-- `id`は一意制約
-- `author`/`content`は少なくともNOT NULL想定（詳細は次工程で確定）
+#### 制約/整合性（確定）
+- `id` は主キー
+- `author` / `content` は NOT NULL
+- 文字コード: `utf8mb4` / `utf8mb4_unicode_ci`
 
-#### インデックス（例）
-- `posts(created_at)`
-  - `ORDER BY created_at DESC` を使う一覧取得の効率化
+#### インデックス（確定）
+- `idx_posts_created_at (created_at)` — `ORDER BY created_at DESC` 用
 
 ### 3.2 `post_images`（投稿画像紐付け）
 
@@ -67,30 +62,30 @@ erDiagram
 - 1投稿に対して複数画像を紐づけるための中間テーブル
 - 画像の順序を保持し、一覧/詳細表示で安定した表示順を実現する
 
-#### カラム（案）
-- `id`（PK）
-  - 画像レコードを一意に識別する整数（auto increment想定）
-- `post_id`（FK -> `posts.id`）
-  - 親投稿への参照
-- `s3_key`
-  - S3上のキー（画像本体識別）
-- `image_url`
-  - 表示用URLの保持方針は未確定
-  - 例:
-    - CloudFrontのURL直書き（DBにフルURLを保持）
-    - クライアント側/サーバ側で `s3_key` から組み立てる（DBにはキーのみ保持してURL組み立て）
-- `sort_order`
-  - 投稿内での画像順序
+#### カラム（確定）
+- `id`（PK）: `BIGINT UNSIGNED` AUTO_INCREMENT
+- `post_id`（FK → `posts.id`）: `BIGINT UNSIGNED NOT NULL`
+- `s3_key`: `VARCHAR(512) NOT NULL` — S3上のキー
+- `image_url`: `VARCHAR(2048) NULL` — 表示用URL（保持方式は手順9で確定）
+- `sort_order`: `INT UNSIGNED NOT NULL DEFAULT 0` — 投稿内の表示順
 
-#### 制約/整合性（ベース）
-- `post_id`は `posts.id` を参照する外部キー
-- 削除時の挙動（カスケード削除等）は、S3削除方針とセットで後述の未確定事項として扱う
+#### 制約/整合性（確定）
+- `post_id` は `posts.id` を参照する外部キー
+- 親投稿削除時: `ON DELETE CASCADE`（`post_images` 行も DB 上で削除）
 
-#### インデックス（例）
-- `post_images(post_id)`
-  - 投稿IDで画像を引く処理の効率化
+#### インデックス（確定）
+- `idx_post_images_post_id (post_id)`
 
-## 4. アプリ要件との対応
+## 4. SQL 資産
+
+| ファイル | 内容 |
+| --- | --- |
+| [db/schema/001_create_database.sql](../db/schema/001_create_database.sql) | DB 作成・utf8mb4 |
+| [db/schema/002_create_tables.sql](../db/schema/002_create_tables.sql) | テーブル DDL |
+| [db/seeds/dev_seed.sql](../db/seeds/dev_seed.sql) | 開発用 DML（12投稿） |
+| [db/README.md](../db/README.md) | ローカル適用手順 |
+
+## 5. アプリ要件との対応
 
 - 投稿一覧
   - `posts.created_at` を基に並び順を作り、ページングに使う
@@ -99,10 +94,10 @@ erDiagram
   - 投稿作成時: `posts` と `post_images` を同時に保存
   - 投稿修正時: 画像更新方針（全置換/差分/削除指定）に応じて更新手順を決める
 - 投稿削除
-  - `posts` を削除する際に、紐づく `post_images` も整合するように削除する
+  - `posts` を削除する際に、紐づく `post_images` も DB 上は CASCADE で削除
   - S3側オブジェクトの扱いは未確定事項
 
-## 5. 未確定事項（次工程で確定させる）
+## 6. 未確定事項（手順9以降で確定）
 
 - 画像の `image_url` の保持方式
   - DBに `image_url`（フルURL）を保持するか
@@ -113,6 +108,5 @@ erDiagram
 - 修正時の画像更新方針
   - 全置換（既存画像を削除→新規追加）か
   - 差分更新（追加/削除/並び替え）か
-- 文字コード・サイズ上限
-  - 投稿テキスト長、画像サイズ上限、拡張子制限など（実装時に確定）
-
+- サイズ上限
+  - 投稿テキスト長、画像サイズ上限、拡張子制限など（API実装時に確定）

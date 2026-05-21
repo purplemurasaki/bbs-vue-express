@@ -1,0 +1,22 @@
+# Local MySQL for development (step 8 DDL/DML). Not used in CI.
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: bbs-mysql
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: bbs_dev_root
+      MYSQL_DATABASE: bbs
+    volumes:
+      - ./db/schema:/docker-entrypoint-initdb.d:ro
+      - bbs_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-pbbs_dev_root']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  bbs_mysql_data:
