@@ -43,6 +43,8 @@ terraform output s3_bucket_name
 terraform output cloudfront_url
 terraform output -raw rds_endpoint
 terraform output db_secret_arn
+terraform output github_actions_role_arn
+terraform output deploy_bucket_name
 ```
 
 ## State（local）
@@ -67,6 +69,39 @@ terraform output db_secret_arn
 | RDS 非公開 | インターネットから 3306 に到達できないこと |
 
 DDL（`db/schema/*.sql`）とアプリデプロイは手順12で実施する。
+
+## 手順12: CI/CD デプロイ追補
+
+手順12のコードマージ後、**既存環境に追補 apply** する（`main` への自動 apply はしない）。
+
+```bash
+cd infra/terraform
+terraform plan   # github_deploy モジュール + EC2 IAM 追補
+terraform apply
+```
+
+### GitHub Repository Variables
+
+`terraform output` の値を GitHub → Settings → Secrets and variables → Actions → **Variables** に登録する。
+
+| Variable | output |
+| --- | --- |
+| `AWS_ROLE_ARN` | `github_actions_role_arn` |
+| `AWS_REGION` | `ap-northeast-1` |
+| `EC2_INSTANCE_ID` | `ec2_instance_id` |
+| `DEPLOY_BUCKET` | `deploy_bucket_name` |
+| `DB_SECRET_ARN` | `db_secret_arn` |
+| `S3_BUCKET` | `s3_bucket_name` |
+| `CLOUDFRONT_BASE_URL` | `cloudfront_url` |
+| `CORS_ORIGIN` | `app_url` |
+
+### 初回デプロイ
+
+1. PR マージ前: ブランチ `work/cicd-auto-deploy` 上で Actions → **CD** → Run workflow → `bootstrap=true`
+2. 成功後 `curl http://<app_url>/api/health` を確認
+3. `main` マージ後は CI 成功時に CD が自動実行される
+
+詳細は [docs/deploy_design.md](../../docs/deploy_design.md) を参照。
 
 ## 破棄
 

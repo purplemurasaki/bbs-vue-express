@@ -43,3 +43,13 @@ output "db_secret_arn" {
   description = "Secrets Manager ARN for database credentials"
   value       = module.database.secret_arn
 }
+
+output "github_actions_role_arn" {
+  description = "IAM role ARN for GitHub Actions OIDC (CD workflow)"
+  value       = module.github_deploy.github_actions_role_arn
+}
+
+output "deploy_bucket_name" {
+  description = "S3 bucket for CD release artifacts"
+  value       = module.github_deploy.deploy_bucket_name
+}

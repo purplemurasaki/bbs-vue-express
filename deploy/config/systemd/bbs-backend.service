@@ -1,0 +1,16 @@
+[Unit]
+Description=BBS Backend (Express)
+After=network.target
+
+[Service]
+Type=simple
+User=bbs
+Group=bbs
+WorkingDirectory=/opt/bbs-app/current/backend
+EnvironmentFile=/opt/bbs-app/.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
