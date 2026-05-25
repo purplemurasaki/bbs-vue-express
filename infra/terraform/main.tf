@@ -35,6 +35,15 @@ module "database" {
   rds_security_group_id   = module.security.rds_security_group_id
 }
 
+data "aws_caller_identity" "current" {}
+
+module "github_deploy" {
+  source = "./modules/github_deploy"
+
+  name_prefix       = local.name_prefix
+  github_repository = var.github_repository
+}
+
 module "compute" {
   source = "./modules/compute"
 
@@ -43,4 +52,6 @@ module "compute" {
   public_subnet_id      = module.network.public_subnet_id
   ec2_security_group_id = module.security.ec2_security_group_id
   s3_bucket_arn         = module.storage.bucket_arn
+  deploy_bucket_arn     = module.github_deploy.deploy_bucket_arn
+  db_secret_arn         = module.database.secret_arn
 }

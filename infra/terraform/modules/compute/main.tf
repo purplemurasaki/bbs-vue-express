@@ -66,6 +66,44 @@ resource "aws_iam_role_policy" "s3_images" {
   policy = data.aws_iam_policy_document.s3_images.json
 }
 
+data "aws_iam_policy_document" "deploy_artifacts" {
+  statement {
+    sid    = "DeployBucketRead"
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket",
+    ]
+    resources = [
+      var.deploy_bucket_arn,
+      "${var.deploy_bucket_arn}/*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "deploy_artifacts" {
+  name   = "${var.name_prefix}-ec2-deploy-read"
+  role   = aws_iam_role.ec2.id
+  policy = data.aws_iam_policy_document.deploy_artifacts.json
+}
+
+data "aws_iam_policy_document" "db_secret" {
+  statement {
+    sid    = "DbSecretRead"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue",
+    ]
+    resources = [var.db_secret_arn]
+  }
+}
+
+resource "aws_iam_role_policy" "db_secret" {
+  name   = "${var.name_prefix}-ec2-db-secret"
+  role   = aws_iam_role.ec2.id
+  policy = data.aws_iam_policy_document.db_secret.json
+}
+
 resource "aws_iam_instance_profile" "ec2" {
   name = "${var.name_prefix}-ec2-profile"
   role = aws_iam_role.ec2.name

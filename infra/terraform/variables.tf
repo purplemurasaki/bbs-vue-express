@@ -57,3 +57,9 @@ variable "rds_skip_final_snapshot" {
   type        = bool
   default     = true
 }
+
+variable "github_repository" {
+  description = "GitHub repository (owner/repo) for Actions OIDC deploy role trust"
+  type        = string
+  default     = "purplemurasaki/bbs-vue-express"
+}

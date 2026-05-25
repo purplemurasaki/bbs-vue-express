@@ -11,3 +11,5 @@ db_master_username  = "bbs_app"
 
 rds_allocated_storage   = 20
 rds_skip_final_snapshot = true
+
+github_repository = "purplemurasaki/bbs-vue-express"
