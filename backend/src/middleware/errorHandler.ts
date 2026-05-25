@@ -2,6 +2,24 @@ import type { ErrorRequestHandler } from 'express'
 
 import { HttpError } from '../services/postService'
 
+function logServerError(err: unknown): void {
+  if (err && typeof err === 'object') {
+    const e = err as { code?: string; errno?: number; sqlMessage?: string; sql?: string }
+    if (e.code || e.sqlMessage) {
+      // eslint-disable-next-line no-console
+      console.error('Unhandled error:', {
+        code: e.code,
+        errno: e.errno,
+        sqlMessage: e.sqlMessage,
+        sql: e.sql,
+      })
+      return
+    }
+  }
+  // eslint-disable-next-line no-console
+  console.error(err)
+}
+
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   if (err instanceof HttpError) {
     res.status(err.status).json({ message: err.message })
@@ -14,7 +32,6 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     return
   }
 
-  // eslint-disable-next-line no-console
-  console.error(err)
+  logServerError(err)
   res.status(500).json({ message: 'Internal Server Error' })
 }

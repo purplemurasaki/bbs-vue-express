@@ -98,8 +98,10 @@ terraform apply
 ### 初回デプロイ
 
 1. PR マージ前: ブランチ `work/cicd-auto-deploy` 上で Actions → **CD** → Run workflow → `bootstrap=true`
-2. 成功後 `curl http://<app_url>/api/health` を確認
+2. 成功後 `curl http://<app_url>/api/health` と `curl http://<app_url>/api/posts?page=1` を確認
 3. `main` マージ後は CI 成功時に CD が自動実行される
+
+`/api/posts` が 500 のときは [docs/deploy_design.md](../../docs/deploy_design.md) のトラブルシュートを参照（DDL 未適用が多い）。
 
 詳細は [docs/deploy_design.md](../../docs/deploy_design.md) を参照。
 

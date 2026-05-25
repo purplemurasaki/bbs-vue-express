@@ -38,7 +38,8 @@ umask 077
   echo "MYSQL_PORT=${MYSQL_PORT}"
   echo "MYSQL_DATABASE=${MYSQL_DATABASE}"
   echo "MYSQL_USER=${MYSQL_USER}"
-  printf 'MYSQL_PASSWORD=%q\n' "$MYSQL_PASSWORD"
+  # Plain value for systemd EnvironmentFile (no shell %q quotes; TF password is alphanumeric)
+  echo "MYSQL_PASSWORD=${MYSQL_PASSWORD}"
   echo "CORS_ORIGIN=${CORS_ORIGIN}"
 } >"$ENV_FILE"
 chown bbs:bbs "$ENV_FILE"
