@@ -1,3 +1,4 @@
+import type { LikeRepository } from '../repositories/likeRepository'
 import type { PostRepository } from '../repositories/postRepository'
 import type { ImageStorage } from './imageStorage/types'
 import type { ListPostsResult, PostDto, PostImageRow, PostRow } from '../types/post'
@@ -27,13 +28,19 @@ function mapImage(row: PostImageRow, storage: ImageStorage): PostDto['images'][n
   }
 }
 
-function mapPost(row: PostRow, images: PostImageRow[], storage: ImageStorage): PostDto {
+function mapPost(
+  row: PostRow,
+  images: PostImageRow[],
+  storage: ImageStorage,
+  likeCount: number,
+): PostDto {
   return {
     id: row.id,
     author: row.author,
     content: row.content,
     created_at: toIso(row.created_at),
     updated_at: toIso(row.updated_at),
+    like_count: likeCount,
     images: images.map((img) => mapImage(img, storage)),
   }
 }
@@ -41,6 +48,7 @@ function mapPost(row: PostRow, images: PostImageRow[], storage: ImageStorage): P
 export class PostService {
   constructor(
     private readonly repo: PostRepository,
+    private readonly likeRepo: LikeRepository,
     private readonly storage: ImageStorage,
   ) {}
 
@@ -48,6 +56,7 @@ export class PostService {
     const { rows, hasNext } = await this.repo.listPosts(page)
     const postIds = rows.map((r) => r.id)
     const allImages = await this.repo.findImagesByPostIds(postIds)
+    const likeCounts = await this.likeRepo.countByPostIds(postIds)
     const imagesByPost = new Map<number, PostImageRow[]>()
     for (const img of allImages) {
       const list = imagesByPost.get(img.post_id) ?? []
@@ -55,7 +64,14 @@ export class PostService {
       imagesByPost.set(img.post_id, list)
     }
     return {
-      posts: rows.map((row) => mapPost(row, imagesByPost.get(row.id) ?? [], this.storage)),
+      posts: rows.map((row) =>
+        mapPost(
+          row,
+          imagesByPost.get(row.id) ?? [],
+          this.storage,
+          likeCounts.get(row.id) ?? 0,
+        ),
+      ),
       page,
       hasNext,
     }
@@ -67,7 +83,8 @@ export class PostService {
       throw new HttpError(404, 'post not found')
     }
     const images = await this.repo.findImagesByPostId(id)
-    return mapPost(row, images, this.storage)
+    const likeCount = await this.likeRepo.countByPostId(id)
+    return mapPost(row, images, this.storage, likeCount)
   }
 
   async createPost(

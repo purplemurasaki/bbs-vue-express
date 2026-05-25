@@ -28,6 +28,9 @@
           />
         </div>
         <div class="actions">
+          <button type="button" :disabled="likingId === p.id" @click="onLike(p.id)">
+            {{ likingId === p.id ? 'いいね中...' : `いいね (${p.like_count})` }}
+          </button>
           <RouterLink :to="`/posts/${p.id}/edit`">修正</RouterLink>
           <button type="button" class="danger" :disabled="deletingId === p.id" @click="onDelete(p.id)">
             {{ deletingId === p.id ? '削除中...' : '削除' }}
@@ -41,7 +44,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 
-import { deletePost, getPosts, type Post, type PostImage } from '../api/posts'
+import { deletePost, getPosts, likePost, type Post, type PostImage } from '../api/posts'
 import { formatDateTime } from '../lib/datetime'
 
 const posts = ref<Post[]>([])
@@ -50,6 +53,7 @@ const hasNext = ref(false)
 const loading = ref(false)
 const error = ref<string | null>(null)
 const deletingId = ref<number | null>(null)
+const likingId = ref<number | null>(null)
 
 function sortedImages(post: Post): PostImage[] {
   return [...post.images]
@@ -68,6 +72,22 @@ async function load() {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
     loading.value = false
+  }
+}
+
+async function onLike(id: number) {
+  likingId.value = id
+  error.value = null
+  try {
+    const res = await likePost(id)
+    const post = posts.value.find((p) => p.id === id)
+    if (post) {
+      post.like_count = res.like_count
+    }
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    likingId.value = null
   }
 }
 

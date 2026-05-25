@@ -3,19 +3,29 @@ import type { Pool, PoolConnection } from 'mysql2/promise'
 import type { PostRepository } from '../../src/repositories/postRepository'
 import type { PostImageRow, PostRow } from '../../src/types/post'
 
+export type MockPostLike = {
+  id: number
+  post_id: number
+  created_at: Date
+}
+
 export type MockPostStore = {
   posts: PostRow[]
   images: PostImageRow[]
+  likes: MockPostLike[]
   nextPostId: number
   nextImageId: number
+  nextLikeId: number
 }
 
 export function createEmptyStore(): MockPostStore {
   return {
     posts: [],
     images: [],
+    likes: [],
     nextPostId: 1,
     nextImageId: 1,
+    nextLikeId: 1,
   }
 }
 
@@ -121,6 +131,7 @@ export class MockPostRepository implements Pick<
     const before = this.store.posts.length
     this.store.posts = this.store.posts.filter((p) => p.id !== id)
     this.store.images = this.store.images.filter((i) => i.post_id !== id)
+    this.store.likes = this.store.likes.filter((l) => l.post_id !== id)
     return { deleted: this.store.posts.length < before, imageKeys }
   }
 
@@ -129,9 +140,41 @@ export class MockPostRepository implements Pick<
   }
 }
 
+export class MockLikeRepository {
+  constructor(public readonly store: MockPostStore) {}
+
+  async insertLike(postId: number): Promise<void> {
+    const now = new Date()
+    this.store.likes.push({
+      id: this.store.nextLikeId++,
+      post_id: postId,
+      created_at: now,
+    })
+  }
+
+  async countByPostId(postId: number): Promise<number> {
+    return this.store.likes.filter((l) => l.post_id === postId).length
+  }
+
+  async countByPostIds(postIds: number[]): Promise<Map<number, number>> {
+    const result = new Map<number, number>()
+    for (const postId of postIds) {
+      const count = this.store.likes.filter((l) => l.post_id === postId).length
+      if (count > 0) {
+        result.set(postId, count)
+      }
+    }
+    return result
+  }
+}
+
 // Satisfy PostRepository type for PostService constructor
 export function asPostRepository(mock: MockPostRepository): PostRepository {
   return mock as unknown as PostRepository
+}
+
+export function asLikeRepository(mock: MockLikeRepository): import('../../src/repositories/likeRepository').LikeRepository {
+  return mock as unknown as import('../../src/repositories/likeRepository').LikeRepository
 }
 
 export function dummyPool(): Pool {

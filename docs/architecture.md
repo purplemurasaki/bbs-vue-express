@@ -173,6 +173,15 @@ sequenceDiagram
   - `post_images` も削除
   - ストレージ上の画像はベストエフォートで削除
 
+### 5.6 投稿いいね
+- `POST /api/posts/:id/likes`
+- Body: なし
+- 動作:
+  - 指定IDの投稿が存在することを確認
+  - `post_likes` に1行 INSERT（同一人物の制限なし）
+- 返却: `201` `{ "like_count": number }`
+- 一覧・詳細の `PostDto` に `like_count` を含める（`GET /api/posts`, `GET /api/posts/:id`）
+
 ## 6. DB設計（テーブル案）
 
 ### 6.1 `posts`（投稿本体）
@@ -189,9 +198,15 @@ sequenceDiagram
 - `image_url`（後述の方針により保持: CloudFrontのURL直書き or クライアント生成）
 - `sort_order`（表示順を安定させるため）
 
+### 6.3 `post_likes`（投稿いいね）
+- `id`（PK）
+- `post_id`（FK -> posts.id, ON DELETE CASCADE）
+- `created_at`
+
 一覧ページング用途のため、少なくとも以下のインデックスを想定:
 - `posts(created_at)`
 - `post_images(post_id)`
+- `post_likes(post_id)`
 
 ## 7. 非機能と運用方針（ベース）
 

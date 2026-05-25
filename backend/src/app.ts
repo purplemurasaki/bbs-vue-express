@@ -3,15 +3,17 @@ import cors from 'cors'
 import path from 'path'
 
 import { loadConfig, type AppConfig } from './config/env'
-import { createPostService } from './createServices'
+import { createLikeService, createPostService } from './createServices'
 import { errorHandler } from './middleware/errorHandler'
 import { healthRouter } from './routes/health'
 import { createPostsRouter } from './routes/posts'
+import type { LikeService } from './services/likeService'
 import type { PostService } from './services/postService'
 
 export type CreateAppOptions = {
   config?: AppConfig
   postService?: PostService
+  likeService?: LikeService
 }
 
 export function createApp(options?: CreateAppOptions | AppConfig) {
@@ -38,7 +40,8 @@ export function createApp(options?: CreateAppOptions | AppConfig) {
   app.use(healthRouter)
 
   const postService = opts.postService ?? createPostService(cfg)
-  app.use(createPostsRouter(postService))
+  const likeService = opts.likeService ?? createLikeService(cfg)
+  app.use(createPostsRouter(postService, likeService))
 
   app.use(errorHandler)
 

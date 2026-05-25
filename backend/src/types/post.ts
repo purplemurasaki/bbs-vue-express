@@ -27,6 +27,7 @@ export type PostDto = {
   content: string
   created_at: string
   updated_at: string
+  like_count: number
   images: PostImageDto[]
 }
 

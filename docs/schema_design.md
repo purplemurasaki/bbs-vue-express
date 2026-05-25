@@ -15,6 +15,7 @@
 ```mermaid
 erDiagram
   posts ||--o{ post_images : "has"
+  posts ||--o{ post_likes : "has"
 
   posts {
     int id PK
@@ -30,6 +31,12 @@ erDiagram
     string s3_key
     string image_url
     int sort_order
+  }
+
+  post_likes {
+    int id PK
+    int post_id FK
+    datetime created_at
   }
 ```
 
@@ -76,12 +83,32 @@ erDiagram
 #### インデックス（確定）
 - `idx_post_images_post_id (post_id)`
 
+### 3.3 `post_likes`（投稿いいね）
+
+#### 意図
+- 投稿へのいいねを1操作1行として積み上げる（同一人物の制限なし）
+- 一覧・詳細では `COUNT(*)` で件数表示
+
+#### カラム（確定）
+- `id`（PK）: `BIGINT UNSIGNED` AUTO_INCREMENT
+- `post_id`（FK → `posts.id`）: `BIGINT UNSIGNED NOT NULL`
+- `created_at`: `DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3)`
+
+#### 制約/整合性（確定）
+- `post_id` は `posts.id` を参照する外部キー
+- 親投稿削除時: `ON DELETE CASCADE`
+- `(post_id, liker)` 等の UNIQUE は付けない（何度でもいいね可能）
+
+#### インデックス（確定）
+- `idx_post_likes_post_id (post_id)` — 件数集計用
+
 ## 4. SQL 資産
 
 | ファイル | 内容 |
 | --- | --- |
 | [db/schema/001_create_database.sql](../db/schema/001_create_database.sql) | DB 作成・utf8mb4 |
 | [db/schema/002_create_tables.sql](../db/schema/002_create_tables.sql) | テーブル DDL |
+| [db/schema/003_create_post_likes.sql](../db/schema/003_create_post_likes.sql) | いいねテーブル DDL |
 | [db/seeds/dev_seed.sql](../db/seeds/dev_seed.sql) | 開発用 DML（12投稿） |
 | [db/README.md](../db/README.md) | ローカル適用手順 |
 
@@ -96,6 +123,9 @@ erDiagram
 - 投稿削除
   - `posts` を削除する際に、紐づく `post_images` も DB 上は CASCADE で削除
   - ストレージ（ローカル/S3）のオブジェクトはベストエフォートで削除
+- いいね
+  - `POST /api/posts/:id/likes` で `post_likes` に1行 INSERT
+  - 一覧・詳細の `like_count` は `post_likes` の件数
 
 ## 6. 手順9で確定した事項
 
