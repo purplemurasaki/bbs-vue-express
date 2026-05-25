@@ -11,6 +11,7 @@ export type Post = {
   content: string
   created_at: string
   updated_at: string
+  like_count: number
   images: PostImage[]
 }
 
@@ -102,4 +103,8 @@ export async function updatePost(id: number, formData: FormData): Promise<{ id: 
 
 export async function deletePost(id: number): Promise<void> {
   return requestVoid(`/api/posts/${id}`, { method: 'DELETE' })
+}
+
+export async function likePost(id: number): Promise<{ like_count: number }> {
+  return requestJson(`/api/posts/${id}/likes`, { method: 'POST' })
 }
