@@ -111,7 +111,22 @@ Settings → Secrets and variables → Actions → **Variables**:
 - [ ] ブラウザで投稿一覧・作成・画像（CloudFront）が動作
 - [ ] `main` マージ後、CI → CD が連鎖実行される
 
-## 8. 未確定事項
+## 8. トラブルシュート（`/api/posts` が 500）
+
+SSM で EC2 に入り確認する。
+
+```bash
+sudo journalctl -u bbs-backend -n 50 --no-pager
+source /opt/bbs-app/.env && export MYSQL_PWD="$MYSQL_PASSWORD"
+mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" -e "SHOW TABLES IN bbs;"
+```
+
+| ログ / 結果 | 対処 |
+| --- | --- |
+| `Table 'bbs.posts' doesn't exist` | `sudo /opt/bbs-app/scripts/apply-schema.sh` → `sudo systemctl restart bbs-backend` |
+| `Access denied for user` | `/opt/bbs-app/.env` の `MYSQL_PASSWORD` を再生成（`render-env.sh`）。引用符付き `%q` 形式は使わない |
+
+## 9. 未確定事項
 
 - HTTPS（443）は SG のみ開放。nginx SSL / ACM は別手順
 - ロールバック手順の自動化（手動で `current` シンボリックリンク切替は可能）

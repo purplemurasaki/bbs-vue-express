@@ -57,9 +57,8 @@ echo "Installing backend production dependencies..."
 cd "${CURRENT_LINK}/backend"
 sudo -u bbs npm ci --omit=dev
 
-if [[ "${RUN_SCHEMA_APPLY:-false}" == "true" ]]; then
-  /opt/bbs-app/scripts/apply-schema.sh
-fi
+# Idempotent DDL on every deploy (CREATE TABLE IF NOT EXISTS)
+/opt/bbs-app/scripts/apply-schema.sh
 
 systemctl restart bbs-backend 2>/dev/null || systemctl start bbs-backend
 systemctl enable bbs-backend
