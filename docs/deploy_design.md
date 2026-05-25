@@ -66,7 +66,7 @@ sequenceDiagram
 
 `workflow_dispatch` で `bootstrap=true` を指定すると:
 
-1. `bootstrap.sh` — Node 24、nginx、mysql クライアント、systemd/nginx 配置
+1. `bootstrap.sh` — Node 24、nginx、MariaDB クライアント（`mariadb105` / `mysql` CLI）、systemd/nginx 配置
 2. `deploy.sh` — 成果物展開
 3. `apply-schema.sh` — `db/schema/*.sql` を RDS に適用（`RUN_SCHEMA_APPLY=true`）
 
