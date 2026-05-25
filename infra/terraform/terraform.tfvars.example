@@ -1,4 +1,4 @@
-# Copy to terraform.tfvars (do not commit terraform.tfvars)
+# Copy to terraform.tfvars (do NOT copy to terraform.tfstate; do not commit terraform.tfvars)
 aws_region   = "ap-northeast-1"
 project_name = "bbs"
 environment  = "dev"

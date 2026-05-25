@@ -3,7 +3,8 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  az = data.aws_availability_zones.available.names[0]
+  az_primary   = data.aws_availability_zones.available.names[0]
+  az_secondary = data.aws_availability_zones.available.names[1]
 }
 
 resource "aws_vpc" "main" {
@@ -27,7 +28,7 @@ resource "aws_internet_gateway" "main" {
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = cidrsubnet(var.vpc_cidr, 8, 1)
-  availability_zone       = local.az
+  availability_zone       = local.az_primary
   map_public_ip_on_launch = true
 
   tags = {
@@ -39,10 +40,21 @@ resource "aws_subnet" "public" {
 resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = cidrsubnet(var.vpc_cidr, 8, 2)
-  availability_zone = local.az
+  availability_zone = local.az_primary
 
   tags = {
-    Name = "${var.name_prefix}-private"
+    Name = "${var.name_prefix}-private-a"
+    Tier = "private"
+  }
+}
+
+resource "aws_subnet" "private_secondary" {
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, 3)
+  availability_zone = local.az_secondary
+
+  tags = {
+    Name = "${var.name_prefix}-private-b"
     Tier = "private"
   }
 }
@@ -75,5 +87,10 @@ resource "aws_route_table" "private" {
 
 resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_secondary" {
+  subnet_id      = aws_subnet.private_secondary.id
   route_table_id = aws_route_table.private.id
 }

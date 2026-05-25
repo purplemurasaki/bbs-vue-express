@@ -23,6 +23,17 @@ terraform plan
 terraform apply
 ```
 
+### 注意（PowerShell）
+
+- 変数ファイル: `Copy-Item terraform.tfvars.example terraform.tfvars`
+- `terraform.tfstate` は `terraform apply` 時に Terraform が自動生成する。**手動で作成・コピーしない**（`terraform.tfvars.example` を `terraform.tfstate` にコピーすると `terraform init` が失敗する）
+- 誤って tfstate を壊した場合（未 `apply` のとき）: `Remove-Item terraform.tfstate` のあと `terraform init` を再実行
+
+### apply で失敗した場合（既知の制約）
+
+- EC2: AL2023 のルートディスクは **30GB 以上**（`modules/compute` の `volume_size`）
+- RDS: DB subnet group は **2 AZ 以上**の private subnet が必要（`modules/network` の `private_secondary`）
+
 ## 主な outputs
 
 ```bash
