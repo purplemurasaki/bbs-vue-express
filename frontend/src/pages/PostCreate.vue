@@ -14,7 +14,7 @@
       </label>
 
       <label class="label">
-        画像（複数可）
+        画像（複数可、最大10枚・各5MBまで）
         <input type="file" multiple accept="image/*" @change="onFilesSelected" />
       </label>
 
@@ -39,6 +39,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { createPost } from '../api/posts'
+import { validateImageFiles } from '../lib/imageValidation'
 
 const router = useRouter()
 
@@ -58,17 +59,22 @@ function onFilesSelected(e: Event) {
 
 async function onSubmit() {
   error.value = null
+  const validationError = validateImageFiles(files.value)
+  if (validationError) {
+    error.value = validationError
+    return
+  }
+
   submitting.value = true
   try {
     const formData = new FormData()
     formData.append('author', author.value)
     formData.append('content', content.value)
     for (const f of files.value) {
-      // バックエンド実装に合わせてフィールド名を後で調整可能
       formData.append('images[]', f)
     }
-    const res = await createPost(formData)
-    await router.push(`/posts/${res.id}/edit`)
+    await createPost(formData)
+    await router.push('/')
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e)
   } finally {
@@ -106,4 +112,3 @@ async function onSubmit() {
   color: #b91c1c;
 }
 </style>
-

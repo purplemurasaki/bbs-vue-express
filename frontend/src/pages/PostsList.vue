@@ -15,12 +15,23 @@
       <li v-for="p in posts" :key="p.id" class="item">
         <div class="meta">
           <span class="author">{{ p.author }}</span>
-          <span class="time">{{ p.created_at }}</span>
+          <span class="time">{{ formatDateTime(p.created_at) }}</span>
         </div>
         <div class="content">{{ p.content }}</div>
+        <div v-if="sortedImages(p).length > 0" class="images">
+          <img
+            v-for="img in sortedImages(p)"
+            :key="img.id"
+            :src="img.image_url!"
+            :alt="`${p.author}の投稿画像`"
+            class="thumb"
+          />
+        </div>
         <div class="actions">
           <RouterLink :to="`/posts/${p.id}/edit`">修正</RouterLink>
-          <button type="button" class="danger" @click="onDelete(p.id)">削除</button>
+          <button type="button" class="danger" :disabled="deletingId === p.id" @click="onDelete(p.id)">
+            {{ deletingId === p.id ? '削除中...' : '削除' }}
+          </button>
         </div>
       </li>
     </ul>
@@ -30,13 +41,21 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 
-import { getPosts, type Post } from '../api/posts'
+import { deletePost, getPosts, type Post, type PostImage } from '../api/posts'
+import { formatDateTime } from '../lib/datetime'
 
 const posts = ref<Post[]>([])
 const page = ref(1)
 const hasNext = ref(false)
 const loading = ref(false)
 const error = ref<string | null>(null)
+const deletingId = ref<number | null>(null)
+
+function sortedImages(post: Post): PostImage[] {
+  return [...post.images]
+    .filter((img) => img.image_url)
+    .sort((a, b) => a.sort_order - b.sort_order)
+}
 
 async function load() {
   loading.value = true
@@ -52,9 +71,18 @@ async function load() {
   }
 }
 
-function onDelete(_id: number) {
-  // 削除APIは次工程でバックエンド実装に合わせて接続する
-  alert('削除は未実装です（次工程でAPI接続します）')
+async function onDelete(id: number) {
+  if (!confirm('この投稿を削除しますか？')) return
+  deletingId.value = id
+  error.value = null
+  try {
+    await deletePost(id)
+    await load()
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    deletingId.value = null
+  }
 }
 
 onMounted(load)
@@ -95,6 +123,21 @@ watch(page, load)
   white-space: pre-wrap;
 }
 
+.images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.thumb {
+  max-width: 200px;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
+
 .actions {
   display: flex;
   gap: 12px;
@@ -113,4 +156,3 @@ watch(page, load)
   color: #b91c1c;
 }
 </style>
-
