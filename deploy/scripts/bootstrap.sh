@@ -16,7 +16,8 @@ if [[ "$(id -u)" -ne 0 ]]; then
   exit 1
 fi
 
-dnf install -y nginx mysql jq awscli
+# AL2023 has no "mysql" package; mariadb105 provides the mysql CLI (see AWS RDS docs)
+dnf install -y nginx mariadb105 jq awscli
 
 # Node.js 24 via NodeSource
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -v)" != v24* ]]; then
