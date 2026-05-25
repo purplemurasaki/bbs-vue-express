@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars (do NOT copy to terraform.tfstate; do not commit terraform.tfvars)
+aws_region   = "ap-northeast-1"
+project_name = "bbs"
+environment  = "dev"
+
+vpc_cidr            = "10.0.0.0/16"
+ec2_instance_type   = "t3.micro"
+rds_instance_class  = "db.t4g.micro"
+db_name             = "bbs"
+db_master_username  = "bbs_app"
+
+rds_allocated_storage   = 20
+rds_skip_final_snapshot = true
